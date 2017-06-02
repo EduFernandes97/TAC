@@ -26,6 +26,7 @@ dseg	segment para public 'data'
 	Car				db		32	; Guarda um caracter do Ecran 
 	CarN				db		32	; Guarda um caracter do Ecran 
 	Cor				db		7	; Guarda os atributos de cor do caracter
+	flagAcabouJogo	db		0
 	
 	Horas			dw		0				; Vai guardar a HORA actual
 	Minutos			dw		0				; Vai guardar os minutos actuais
@@ -462,13 +463,8 @@ LE_TECLA	PROC
 
 		mov		ah,08h
 		int		21h
-		mov		ah,0
-		cmp		al,0
-		jne		SAI_TECLA
-		mov		ah, 08h
-		int		21h
-		mov		ah,1
-SAI_TECLA:	RET
+SAI_TECLA:
+	RET
 LE_TECLA	endp
 
 
@@ -495,12 +491,8 @@ JOGO proc
 		mov		Car, al	; Guarda o Caracter que está na posição do Cursor
 		mov		Cor, ah	; Guarda a cor que está na posição do Cursor
 		
-		cmp al, 'X' 
+		cmp al, 'X' ;se esta no fim sai
 		je FIM
-		; goto_xy	78,0		; Mostra o caractr que estava na posição do AVATAR
-		; mov		ah, 02h	; IMPRIME caracter da posição no canto
-		; mov		dl, Car	
-		; int		21H			
 	
 		goto_xy	POSx,POSy	; Vai para posição do cursor
 	IMPRIME:
@@ -516,11 +508,9 @@ JOGO proc
 		
 	LER_SETA:
 		call 		LE_TECLA
-		cmp		ah, 1
-		je		FRENTE
-		CMP 		AL, 27	; ESCAPE
-		ret
-		jmp		LER_SETA
+
+		jmp		FRENTE
+
 			
 	FRENTE:
 		cmp 	al,48h
@@ -575,7 +565,7 @@ JOGO proc
 
 	DIREITA:
 		cmp		al,4Dh
-		jne		LER_SETA 
+		jne		ESCAPE 
 		inc		POSx		;Direita
 		goto_xy POSx, POSy
 		mov 	ah, 08h
@@ -587,7 +577,13 @@ JOGO proc
 		
 		dec POSx	
 		jmp		CICLO
+		
+	ESCAPE:
+		cmp al, 27
+		jne LER_SETA
+		ret
 	FIM:
+		mov flagAcabouJogo, 1
 		ret
 JOGO endp
 
@@ -732,10 +728,11 @@ CompararTempo proc
 		
 		mov al, stringTempo[0]
 		cmp car_fich, al
-		jae HorasIgual
+		ja proxLinha
 		cmp car_fich, al
-			jb MelhorTempo
-		jmp proxLinha
+		jb MelhorTempo
+		cmp car_fich, al
+		je HorasIgual
 		
 		HorasIgual:
 			
@@ -746,10 +743,11 @@ CompararTempo proc
 		
 			mov al, stringTempo[1]
 			cmp car_fich, al
-			jae HorasIgual2
+			ja proxLinha
 			cmp car_fich, al
 			jb MelhorTempo
-			jmp proxLinha
+			cmp car_fich, al
+			je HorasIgual2
 		HorasIgual2:	
 			
 			;--------DESPREZA O 'h'  -------------------
@@ -765,10 +763,11 @@ CompararTempo proc
 			
 			mov al, stringTempo[3]
 			cmp car_fich, al
-			jae MinutosIgual
+			ja proxLinha
 			cmp car_fich, al
 			jb MelhorTempo
-			jmp proxLinha
+			cmp car_fich, al
+			je MinutosIgual
 			
 		MinutosIgual:
 		
@@ -782,10 +781,11 @@ CompararTempo proc
 		
 			mov al, stringTempo[4]
 			cmp car_fich, al
-			jae MinutosIgual2
+			ja proxLinha
 			cmp car_fich, al
 			jb MelhorTempo
-			jmp proxLinha
+			cmp car_fich, al
+			je MinutosIgual2
 		MinutosIgual2:
 			
 		
@@ -802,10 +802,11 @@ CompararTempo proc
 			
 			mov al, stringTempo[6]
 			cmp car_fich, al
-			jae SegundosIgual
+			ja proxLinha
 			cmp car_fich, al
 			jb MelhorTempo
-			jmp proxLinha
+			cmp car_fich, al
+			je SegundosIgual
 			
 		SegundosIgual:
 			call LeProxCaraterTOP
@@ -815,17 +816,19 @@ CompararTempo proc
 			
 			mov al, stringTempo[7]
 			cmp car_fich, al
-			jae SegundosIgual2
+			ja proxLinha
 			cmp car_fich, al
 			jb MelhorTempo
-			jmp proxLinha
+			cmp car_fich, al
+			je MelhorTempo
 		
-		SegundosIgual2:		
-			jmp MelhorTempo
-			jmp proxLinha
+		; SegundosIgual2:		
+			; jmp MelhorTempo
+			; jmp proxLinha
 
 		MelhorTempo:
-			
+			mov ah, 01h
+			int 21h
 			mov FlagCompararTempo, si
 			
 			; mov ah, 09h
@@ -914,7 +917,7 @@ FIM:	mov     ah,3eh
 CompararTempo endp
 
 MostraNovoTOP proc
-	call APAGA_ECRAN; TODO: COMPARAR TEMPO NAO MOSTRAR
+	call APAGA_ECRAN
 	xor si, si
 	inc si
 	
@@ -1409,6 +1412,10 @@ JOGAR:
 	MOV POSya, 20
 	call Ler_TEMPO
 	call JOGO
+	
+	cmp flagAcabouJogo, 0 ;se acabou jogo 
+	je FimOpJogar
+	
 	call FimJogo
 	;call CALCULA_TEMPO
 	;call GUARDA_TOP
@@ -1479,7 +1486,7 @@ IMPRIME:	mov		ah, 02h
 		
 		call 		LE_TECLA
 		cmp		ah, 1
-		je		ESTEND
+		je		CIMA
 		CMP 		AL, 27		; ESCAPE
 		JE		Guarda
 
@@ -1489,28 +1496,11 @@ ZERO:	CMP 		AL, 48		; Tecla 0
 		jmp		CICLO					
 		
 UM:		CMP 		AL, 49		; Tecla 1
-		JNE		ESTEND
+		JNE		CIMA
 		mov		Car, 219		;Caracter CHEIO
 		jmp		CICLO		
-; I:	CMP 		AL, 49h
-	; JNE		I2
-	; CALL CriarInicio
-	; jmp CICLO
 	
-; I2:	CMP 		AL, 69h
-	; JNE		X
-	; CALL CriarInicio
-	; jmp CICLO
-; X:	CMP 		AL, 58h
-	; JNE		X2
-	; CALL CriarFim
-	; jmp CICLO
-; X2:	CMP 		AL, 78h
-	; JNE		CICLO
-	; CALL CriarFim
-	; jmp CICLO
-	
-ESTEND:	cmp 		al,48h
+CIMA:	cmp 		al,48h
 		jne		BAIXO
 		cmp POSy, 3
 		jnge CICLO
@@ -1604,85 +1594,14 @@ Guarda:
 		jmp i
 
 
-	sai:
-	; mov		ah,4CH
-	; INT		21H
-	
-			; mov ah, 01h
-		; int	21h
+	sai:			
+		mov al, '|'
+		mov buffer[si], al
+		INC SI
 
-
-
-
-
-
-
-	; XOR	BX,BX
-	; XOR	si,si
-	; mov cx, 25*80
-	; for1:
-		; MOV	al, BYTE PTR ES:[BX]
-		; INC	BX
-		; INC BX
+		mov al, 10
 		
-		; mov dl, al;auxiliar
-		; mov ax, si
-		; mov dh, bl
-		; mov bl, 41
-		; div bl
-		; mov bl, dh
-		; mov al, dl
-		; cmp ah, 0
-		; je novaLinha
-		
-		
-		
-		
-		
-		; cmp al, 219
-		; je parede
-		
-		; cmp al, ' '
-		; je vazio
-		
-		; cmp al, 'I'
-		; je moveBuffer
-		
-		; cmp al, 'X'
-		; je moveBuffer
-		
-		; parede:
-			; mov al, 31h
-			; jmp moveBuffer
 			
-		; vazio:
-			; mov al, 30h
-			; jmp moveBuffer
-		
-		; prox:
-			; inc si
-			; loop for1
-		
-		; novaLinha:
-			; dec bx
-			; dec bx
-			; add bx, 41
-			
-			mov al, '|'
-			mov buffer[si], al
-			INC SI
-		
-			mov al, 10
-			
-			
-		; moveBuffer:
-			; mov ax, dx
-			; mov buffer[si], al
-			; INC SI
-	; loop for1
-	
-
-
 	
 	mov	ah, 3ch			; abrir ficheiro para escrita 
 	mov	cx, 00H			; tipo de ficheiro
@@ -1721,15 +1640,6 @@ close:
 fim:	
 	ret
 criarMaze endp
-
-
-
-
-
-
-
-
-
 
 
 opTop	proc
