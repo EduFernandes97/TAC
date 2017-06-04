@@ -36,6 +36,7 @@ dseg	segment para public 'data'
 	msgErrorWrite	db	"Ocorreu um erro na escrita para ficheiro!$"
 	msgErrorClose	db	"Ocorreu um erro no fecho do ficheiro!$"
 	stringTempo			db 		'              ';9 digitos para tempo
+	stringSI			db 		'   ';3 digitos para num TOP
 	
 	FlagCompararTempo	dw		0				; Vai guardar a HORA actual
 	
@@ -65,10 +66,14 @@ dseg	segment para public 'data'
 					
 					
 	bufferTop		db		'                                             ';12 bytes para tempo + 10 bytes para nome + 1 para fim
-	NomeUser		db		'          '
+	NomeUser		db		10, 0, 10 dup (' ')
 	
 	
 	buffer         	db      22 dup (41 dup (' '));CRIAR MAZE
+	
+	
+	stringTestes1	db      10 dup(' '), '$'
+	stringTestes2	db      10 dup(' '), '$'
 					
 	
 	
@@ -88,6 +93,25 @@ goto_xy	macro		POSx,POSy
 	mov		dh,POSy
 	int		10h
 endm
+
+TESTES PROC
+			
+					mov stringTestes1[0], 10
+		mov bl, stringTempo[1]
+		mov stringTestes1[1], bl
+		mov stringTestes1[2], '-'
+		mov stringTestes1[3], al
+		mov stringTestes1[4], 10
+		lea dx, stringTestes1
+		mov ah, 09h
+		
+		
+		mov ah, 01
+			int 21h
+TESTES endp
+
+
+
 
 APAGA_ECRAN	PROC
 		PUSH BX
@@ -237,8 +261,6 @@ Ler_TEMPO PROC
 Ler_TEMPO   ENDP 
 
 CALCULA_TEMPO PROC	
- 
-	
 	PUSH AX
 	PUSH BX
 	PUSH CX
@@ -727,11 +749,11 @@ CompararTempo proc
 		je	    fecha_ficheiro	; se EOF fecha o ficheiro 
 		
 		mov al, stringTempo[0]
-		cmp car_fich, al
+		cmp al, car_fich
 		ja proxLinha
-		cmp car_fich, al
+		cmp al, car_fich
 		jb MelhorTempo
-		cmp car_fich, al
+		cmp al, car_fich
 		je HorasIgual
 		
 		HorasIgual:
@@ -741,14 +763,21 @@ CompararTempo proc
 			cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
 			je	    fecha_ficheiro	; se EOF fecha o ficheiro 
 		
-			mov al, stringTempo[1]
-			cmp car_fich, al
+		
+		
+			mov al, stringTempo[1]			
+			call TESTES
+			cmp al, car_fich
 			ja proxLinha
-			cmp car_fich, al
+			cmp al, car_fich
 			jb MelhorTempo
 			cmp car_fich, al
 			je HorasIgual2
 		HorasIgual2:	
+		
+				
+
+		
 			
 			;--------DESPREZA O 'h'  -------------------
 			call LeProxCaraterTOP
@@ -762,12 +791,15 @@ CompararTempo proc
 			je	    fecha_ficheiro	; se EOF fecha o ficheiro 
 			
 			mov al, stringTempo[3]
-			cmp car_fich, al
+			cmp al, car_fich
+			
+
+			
 			ja proxLinha
-			cmp car_fich, al
+			cmp al, car_fich
 			jb MelhorTempo
-			cmp car_fich, al
-			je MinutosIgual
+			; cmp car_fich, al
+			jmp MinutosIgual
 			
 		MinutosIgual:
 		
@@ -780,12 +812,15 @@ CompararTempo proc
 		; int	21h
 		
 			mov al, stringTempo[4]
-			cmp car_fich, al
+			cmp al, car_fich
+			
+
+			
 			ja proxLinha
-			cmp car_fich, al
+			cmp al, car_fich
 			jb MelhorTempo
-			cmp car_fich, al
-			je MinutosIgual2
+			; cmp car_fich, al
+			jmp MinutosIgual2
 		MinutosIgual2:
 			
 		
@@ -801,35 +836,41 @@ CompararTempo proc
 			je	    fecha_ficheiro	; se EOF fecha o ficheiro 
 			
 			mov al, stringTempo[6]
-			cmp car_fich, al
+			cmp al, car_fich
+			
+
+		
+
+			
 			ja proxLinha
-			cmp car_fich, al
+			cmp al, car_fich
 			jb MelhorTempo
-			cmp car_fich, al
-			je SegundosIgual
+			; cmp car_fich, al
+			jmp SegundosIgual
 			
 		SegundosIgual:
-			call LeProxCaraterTOP
+			call 	LeProxCaraterTOP
 			jc	    erro_ler		; se carry é porque aconteceu um erro
 			cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
 			je	    fecha_ficheiro	; se EOF fecha o ficheiro 
 			
 			mov al, stringTempo[7]
-			cmp car_fich, al
+			cmp al, car_fich
 			ja proxLinha
-			cmp car_fich, al
+			cmp al, car_fich
 			jb MelhorTempo
-			cmp car_fich, al
-			je MelhorTempo
+			; cmp car_fich, al
+			jmp proxLinha
 		
 		; SegundosIgual2:		
 			; jmp MelhorTempo
 			; jmp proxLinha
 
 		MelhorTempo:
-			mov ah, 01h
-			int 21h
+			
 			mov FlagCompararTempo, si
+			
+			
 			
 			; mov ah, 09h
 			; lea dx, stringTempo
@@ -850,11 +891,11 @@ CompararTempo proc
 			; mov ah, 01h
 			; int	21h
 			
-			jmp MostraResto
+			jmp FIM
 
 		proxLinha:
-		; mov ah, 01h
-		; int	21h
+			; mov ah, 01h
+			; int	21h
 			call LeProxCaraterTOP
 			jc	    erro_ler		; se carry é porque aconteceu um erro
 			cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
@@ -865,15 +906,15 @@ CompararTempo proc
 			inc si
 			jmp Ciclo
 		
-		MostraResto:
-			call LeProxCaraterTOP
-			jc	    erro_ler		; se carry é porque aconteceu um erro
-			cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
-			je	    fecha_ficheiro	; se EOF fecha o ficheiro 
-			jmp MostraResto
+		; MostraResto:
+			; call LeProxCaraterTOP
+			; jc	    erro_ler		; se carry é porque aconteceu um erro
+			; cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
+			; je	    fecha_ficheiro	; se EOF fecha o ficheiro 
+			; jmp MostraResto
 	erro_ler:
-		mov ah, 01h
-		int	21h
+		; mov ah, 01h
+		; int	21h
 		mov     ah,09h
 		lea     dx,Erro_Ler_Msg
 		int     21h
@@ -905,11 +946,17 @@ CompararTempo proc
 		; mov ah, 01h
 		; int	21h
 	fecha_ficheiro:
+		; mov al, 01h
+		; int 21h
 		cmp si, 10
 		jnbe FIM
 		mov FlagCompararTempo, si
 		
-FIM:	mov     ah,3eh
+FIM:	
+	mov ah, 01h;TODO:TIRAR
+	int 21h
+
+		mov     ah,3eh
 		mov     bx,HandleFich
 		int     21h
 		ret
@@ -917,6 +964,18 @@ FIM:	mov     ah,3eh
 CompararTempo endp
 
 MostraNovoTOP proc
+	mov ah, 02h
+	MOV DL, '-'
+	INT 21H
+
+	cmp FlagCompararTempo, 0
+	je NPedeNome
+	mov ah, 0Ah
+	lea dx, NomeUser
+	; xor di, di
+	; mov NomeUser[di], 12
+	int	21h
+NPedeNome:
 	call APAGA_ECRAN
 	xor si, si
 	inc si
@@ -965,29 +1024,37 @@ MostraNovoTOP proc
 		; mov ah, 02h
 		; int 21h
 		
-		mov dx, si
-		mov bx, FlagCompararTempo
-		cmp dx, bx
+		; mov dx, si
+		
+		cmp si, FlagCompararTempo
 		je InserirDados
-		cmp dx, bx
-		jne Continua
+		; cmp dx, FlagCompararTempo
+		; jne Continua
 	Continua:	
 		call LeProxCaraterTOP2
 		jc	    erro_ler		; se carry é porque aconteceu um erro
 		cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
 		je	    FIM	; se EOF fecha o ficheiro 
 		
-		CMP car_fich, '|'
+		CMP dl, '|'
 		je NOVALINHA
 		
 		jmp Ciclo
 	
 	InserirDados:	
 		;----NUM TOP-----
-		mov ah, 02h
-		mov dx, si
-		add dx, 30h;PODE NAO DAR
-		INT 21H
+		; mov 	ax,si
+		; MOV		bl, 10     
+		; div 	bl
+		; add 	al, 30h				; Caracter Correspondente às dezenas
+		; add		ah,	30h				; Caracter Correspondente às unidades
+		; MOV 	stringSI[0],al			; 
+		; MOV 	stringSI[1],ah
+		; MOV 	stringSI[2],'$'
+		
+		; lea dx, stringSI
+		; mov ah, 09h
+		; int 21h
 		
 		;----TRAÇO-----
 		mov ah, 02h
@@ -1004,17 +1071,50 @@ MostraNovoTOP proc
 		MOV DL, '-'
 		INT 21H
 		
-		;----PEDE NOME-----		
-		mov ah, 0Ah
-		lea dx, NomeUser
-		xor si, si
-		mov NomeUser[si], 12
-		int	21h
+		;----MOSTRA NOME-----			
+		xor di, di
+		inc di
+		inc di
+		mov ch, 0
+		mov cl, NomeUser[1]
+		teste:
+			mov ah, 02h
+			
+			MOV DL, NomeUser[di]
+			INT 21H
+			inc di
+		loop teste
 		
-		; mov ah, 01h
-		; int	21h
+		mov ah, 02h
+		MOV DL, '|'
+		INT 21H
+		
+		
+		; mov dl,10
+		; mov ah,2h
+		; int 21h
+		mov dl,10
+		mov ah,2h
+		int 21h
+		
 		inc si
-		jmp NOVALINHA
+		
+		mov 	ax,si
+		MOV		bl, 10     
+		div 	bl
+		add 	al, 30h				; Caracter Correspondente às dezenas
+		add		ah,	30h				; Caracter Correspondente às unidades
+		MOV 	stringSI[0],al			; 
+		MOV 	stringSI[1],ah
+		MOV 	stringSI[2],'$'
+		
+		lea dx, stringSI
+		mov ah, 09h
+		int 21h
+		
+		
+		
+		jmp Ciclo
 		
 		
 	NOVALINHA:
@@ -1022,6 +1122,37 @@ MostraNovoTOP proc
 		mov ah,2h
 		int 21h
 		inc si
+		;------despreza num TOP-----------
+		call LeProxCaraterTOP
+		jc	    erro_ler		; se carry é porque aconteceu um erro
+		cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
+		je	    FIM	; se EOF fecha o ficheiro 
+		call LeProxCaraterTOP
+		jc	    erro_ler		; se carry é porque aconteceu um erro
+		cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
+		je	    FIM	; se EOF fecha o ficheiro 
+		call LeProxCaraterTOP
+		jc	    erro_ler		; se carry é porque aconteceu um erro
+		cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
+		je	    FIM	; se EOF fecha o ficheiro 
+		call LeProxCaraterTOP
+		jc	    erro_ler		; se carry é porque aconteceu um erro
+		cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
+		je	    FIM	; se EOF fecha o ficheiro 
+		;---------------------------------
+		mov 	ax,si
+		MOV		bl, 10     
+		div 	bl
+		add 	al, 30h				; Caracter Correspondente às dezenas
+		add		ah,	30h				; Caracter Correspondente às unidades
+		MOV 	stringSI[0],al			; 
+		MOV 	stringSI[1],ah
+		MOV 	stringSI[2],'$'
+		
+		lea dx, stringSI
+		mov ah, 09h
+		int 21h
+		
 		JMP Ciclo
 		
 		
