@@ -698,21 +698,13 @@ CompararTempo proc
 		int     21h
 		mov 	flagFich, 0
 		ret
-	
-	;le 1 byte para numero
-	;le 2 bytes para horas
-	;le 1 byte lixo
-	;le 2 bytes para min
-	;le 1 byte lixo
-	;le 2 byte para seg
-	;le 1 byte lixo
-	;le ate fim para nome (lixo)
+
 	Start:
 		xor si, si
 		inc si
 		
 	Ciclo:	
-		CMP SI, 10
+		CMP SI, 11
 		je fecha_ficheiro
 		;------------------ LE NUMERO DO TOP ------------------
 		call LeProxCaraterTOP
@@ -1017,7 +1009,7 @@ NPedeNome:
 		; mov ah, 01h
 		; int	21h
 		
-		CMP SI, 10
+		CMP SI, 11
 		je FIM
 		
 		; mov dx, si
@@ -1154,17 +1146,17 @@ NPedeNome:
 		
 		
 	NOVALINHA:
-		inc numLinhasTOP
+		; inc numLinhasTOP
 	
 		mov dl,10
 		mov ah,2h
 		int 21h
 		inc si
 		;------despreza num TOP-----------
-		call LeProxCaraterTOP
-		jc	    erro_ler		; se carry é porque aconteceu um erro
-		cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
-		je	    FIM	; se EOF fecha o ficheiro 
+		; call LeProxCaraterTOP
+		; jc	    erro_ler		; se carry é porque aconteceu um erro
+		; cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
+		; je	    FIM	; se EOF fecha o ficheiro 
 		call LeProxCaraterTOP
 		jc	    erro_ler		; se carry é porque aconteceu um erro
 		cmp	    ax,0			;EOF?	verifica se já estamos no fim do ficheiro 
@@ -1207,6 +1199,7 @@ NPedeNome:
 
 	cmp FlagCompararTempo, si
 	jne NMostraNome
+	inc numLinhasTOP
 	;----NUM TOP-----
 		mov 	ax,si
 		MOV		bl, 10     
@@ -1480,10 +1473,12 @@ criarMaze proc
 		;Obter a posição
 		; dec		POSy
 		; dec		POSx
+		
+		MOV Car, 219
 
 CICLO:	goto_xy	POSx,POSy
 IMPRIME:	mov		ah, 02h
-		mov		dl, 32
+		mov		dl, Car
 		int		21H			
 		goto_xy	POSx,POSy
 		

@@ -449,7 +449,7 @@ escreve:
 	mov	ah, 40h			; indica que vamos escrever 
     	
 	lea	dx, buffer			; Vamos escrever o que estiver no endereço DX
-	mov	cx, 22*40			; vamos escrever multiplos bytes duma vez só
+	mov	cx, si			; vamos escrever multiplos bytes duma vez só
 	int	21h				; faz a escrita 
 	jnc	close				; se não acontecer erro fecha o ficheiro 
 	
